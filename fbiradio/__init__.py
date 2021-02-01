@@ -41,16 +41,37 @@ def currently_playing(n=1):
     Default: return last track played."""
 
     class Track():
-        def __init__(self, artist = None, track = None, played_at = None):
+        def __init__(self, artist = None, track = None, played_at = None,
+                     flags = None):
             self.artist = artist
             self.track = track
             self.played_at = played_at
+            self.flags = flags.strip()
+
+        def __is_flag(self, flag):
+            if self.flags == flag:
+                return True
+            else:
+                return False
+
+        def is_NSW(self):
+            return self.__is_flag("NSW")
+
+        def is_Aus(self):
+            return self.__is_flag("Aus")
 
         def __str__(self):
             if self.artist and self.track and self.played_at:
-                return f"{self.played_at}: {self.artist} - {self.track}"
+                output = f"{self.played_at}: {self.artist} - {self.track}"
             elif self.artist and self.track:
-                return f"          {self.artist} - {self.track}"
+                output = f"          {self.artist} - {self.track}"
+
+            if self.is_NSW():
+                output += " (NSW)"
+            if self.is_Aus():
+                output += " (Aus)"
+
+            return output
 
     r = requests.get("https://airnet.org.au/guide/grid.php?view=1118").text
     soup = BeautifulSoup(r, "html.parser")
@@ -68,6 +89,7 @@ def currently_playing(n=1):
             artist = track.find("h4", {"class": "trackArtist"}).text,
             track = track.find("h6", {"class": "trackName"}).text,
             played_at = track.find("div", {"class": "jumpToTrack_time"}).text,
+            flags = track.find("div", {"class": "track-flags"}).text,
         ) for track in tracks_raw]
 
     return tracks[-min(len(tracks), int(abs(n))):]
